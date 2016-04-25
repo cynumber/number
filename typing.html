@@ -1,0 +1,216 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="ja">
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+ <meta name="GENERATOR" content="UTF-8 Writer" />
+<title>typinggame</title>
+
+<script>
+
+document.onkeydown = typeGame;  //キー押下時に関数typeGame()を呼び出す
+
+
+
+//文字を格納する配列
+var moji = new Array("0","1","2","3","4","5","6","7","8","9");
+
+//キーコードを格納する配列　//0~9に改造
+var kcode = new Array(48,49,50,51,52,53,54,55,56,57);
+
+//0～9までの12桁の乱数を格納する配列
+var rnd = new Array();
+
+
+
+
+//グローバル変数群
+var mondai = "";       //問題の文字列を格納
+var typing = "";       //打ち込まれた文字列を格納
+var cnt=0;             //何問目か格納
+var typStart,typEnd;   //開始時と終了時の時刻を格納
+var weight=[2,3,4,5,6,7,2,3,4,5,6];
+var j = 0;
+var miss=0;
+    var check=0;
+
+function calcSum(basenumber) {//basenumber=11桁乱数　//12桁目の検査用数字x = 11 – (6a + 5b + 4c + 3d + 2e + 7f + 6g + 5h + 4i + 3j + 2k) mod 11
+  var sum = 0;
+  for (var i=0; i<11; ++i) {
+  	sum += basenumber % 10 * weight[i];//basenumberの１の桁を求めてweightを乗算しsumに加えていく
+  	basenumber = Math.floor(basenumber / 10);//basenumberの桁をどんどん下げていく
+  }
+  return sum;
+}
+
+function calcCheckdigit(basenumber) {//12桁目の検査用数字x = 11 – (6a + 5b + 4c + 3d + 2e + 7f + 6g + 5h + 4i + 3j + 2k) mod 11
+  var s = calcSum(basenumber) % 11;//0~10
+  if (s <= 1)
+  	return 0;
+  return 11 - s;
+}
+
+
+
+//0～9までの乱数を12個作成して配列rndに格納する関数
+function ransu()
+{
+
+
+
+  var base = Math.floor(Math.random()*100000000000);//0~1の間の乱数を10^11する
+  var cd = calcCheckdigit(base);//12桁目を求める
+  var mn = base * 10 + cd; //12桁のマイナンバーを作成
+
+  for(var j=0;j<12;++j){
+    rnd[11-j] = Math.floor(mn%10);
+    mn = mn/10;
+  }
+}
+
+//タイピングゲームの問題をセットする関数
+function gameSet()
+{
+  //カウント数をクリアする
+  cnt=0;
+  j=0;
+  typing = "";
+  miss=0;
+  //まずは問題文を作る
+  ransu();
+
+  //問題文をテーブルを使って表示。各セルはID名「word＋数字」を付す
+  mondai="<table class='Q'>";
+  typing="<table class='Q'>";
+  misss="<table class='Q'>";
+
+  for ( var j = 0 ; j < 12 ; j++ )
+  {
+    var idnum =j;
+
+    mondai += "<td id='word"+idnum+"'>"+rnd[idnum]+"</td>";
+  }
+
+        check=0
+
+    var start="<p>スペースを押すとスタートします</p>";
+  document.getElementById("waku").innerHTML = start;
+
+  document.getElementById("waku2").innerHTML = typing;
+
+  document.getElementById("waku3").innerHTML = misss;
+
+//問題枠に表示する
+
+
+}
+
+//キー入力を受け取る関数
+function typeGame(evt)
+{
+  var kc;  //入力されたキーコードを格納する変数
+
+
+  //入力されたキーのキーコードを取得//kcに代入
+  if (document.all)
+  {
+    kc = event.keyCode;
+  }
+  else
+  {
+    kc = evt.which;
+  }
+    if(kc==32||check==1){//チェックされてるかスペース押されたら実行
+
+        if(kc==32&&check==0){//スペース押されて未チェックだったら実行
+        //問題をセットし表示する
+        typStart = new Date();
+        check=1;
+document.getElementById("waku").innerHTML = mondai;
+         }
+      else if(check==1){
+  //入力されたキーコードと、問題文のキーコードを比較
+  if (kc == kcode[ rnd[cnt] ]){
+    //以下、キーコードが一致した時の処理
+    //最初の1文字が入力された時間を記録する
+
+
+    var idnum =j;
+    typing += "<td id='word"+idnum+"'>"+moji[ rnd[cnt] ]+"</td>";
+
+
+
+  document.getElementById("waku2").innerHTML = typing;
+
+  document.getElementById("waku3").innerHTML = misss;
+
+    j++; //カウント数を＋１にする
+    cnt++;
+    //全文字入力したか確認
+    if ( cnt == 12)
+    {
+      j = 0;
+      //全文字入力していたら、終了時間を記録する
+      typEnd = new Date();
+
+      //終了時間－開始時間で掛かったミリ秒を取得する
+      var keika = typEnd - typStart;
+
+      //1000で割って「切捨て」、秒数を取得
+      var sec = Math.floor( keika/1000 );
+
+      //1000で割った「余り(%で取得できる）」でミリ秒を取得
+      var msec = keika % 1000;
+
+      //問題終了を告げる文字列を作成
+        var fin="GAME終了　時間："+sec+"秒"+msec;
+        var fin2="失敗回数:"+miss;
+
+      //問題枠にゲーム終了を表示
+      document.getElementById("waku3").innerHTML = fin2;
+
+      document.getElementById("waku").innerHTML = fin;
+        miss=0;;
+
+    }
+  }else{miss++;}
+      }}
+}
+</script>
+
+<style type="text/css">
+<!--
+table.Q td
+{
+  width:20px;
+  height:20px;
+  font-size:18pt;
+  text-align:center;
+}
+
+-->
+</style>
+
+</head>
+<body onload="gameSet()" bgcolor="#ffffff" text="#000000" link="#0000ff" alink="#ff0000" vlink="#800080">
+<h1>typinggame</h1>
+
+<form>
+
+  <div id="waku"></div>
+  <div id="waku3"></div>
+
+  <div id="waku2"></div>
+<input type="button" value="問題初期化" onclick="gameSet()"><br>
+</form>
+
+<!--
+<form method="POST" action="cgi-bin/response.asp" name="Form">
+    <input type="text" name="txtName" size="40" maxlength="40">
+    <br>
+    <input type="submit" value="送信" name="btnSubit">
+    <input type="reset" value="リセット" name="btnReset">
+</form>
+-->
+
+</body>
+</html>
